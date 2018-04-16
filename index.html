@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<meta name="viewport" content="width = device-width, initial-scale = 1">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script src="http://code.angularjs.org/1.2.13/angular.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.13/angular-route.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.13/angular-animate.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+  <script src="logic.js"></script>
+<title>Search</title>
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="hw8.css">
+
+<script src="http://connect.facebook.net/en_US/all.js"></script>
+
+
+</head>
+<body>
+
+<div class="jumbotron container-fluid">
+
+<div class="container">
+    <div class="row">
+          <div id="home" class="col-xs-12 col-lg-4 col-md-4"> <a href="/"><h4> FB Search</h4> </a></div>
+          <div class="col-xs-6 col-lg-4" >
+            <form  name="searchform" id="searchform" class="searchform" role="search" action="process.php" method="get">
+            </form>
+            <div class="input-group">
+              <input type="text"  class="form-control search" placeholder="Search" name="keyword" id="srch-term"/>
+              <div class="input-group-btn"><a href="#"></a>
+                <button class="btn btn-default get" type=submit><i class="glyphicon glyphicon-search"></i></a></button>
+              </div>
+            </div>
+            <span><div class="alert alert-danger" id="Error" role="alert" style="display:none">
+  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="false"></span>
+  <span class="sr-only">Error:</span>
+  Field cant be left empty
+</div></span>
+            
+          </div>
+          <div class="col-xs-6 col-lg-4">
+            <div class="btn-group">
+            <input type="button"  value="Clear" class = "btn btn-info clear">
+            </div>
+          </div>
+    </div>
+</div>
+</div>
+
+    <div class="row">
+
+
+<ul class="nav nav-pills nav-justified">
+  <li  role="presentation" data-toggle="tab" id="user" class="active tab"><a href="#">Users</a></li>
+  <li class='tab' role="presentation" id="page" data-toggle="tab"><a href="#">Pages</a></li>
+  <li class='tab' role="presentation" id="event" data-toggle="tab"><a href="#">Events</a></li>
+  <li class='tab' role="presentation" id="place" data-toggle="tab"><a href="#">Places</a></li>
+  <li class='tab' role="presentation" id="group" data-toggle="tab"><a href="#">Groups</a></li>
+  <li class='tab' role="presentation" id="fav" data-toggle="tab"><a href="#">Favorites</a></li>
+</ul>
+</div>
+<div class="row">
+
+
+<body ng-app="myapp">
+<!-- <button ng-click="myData.doClick(item, $event)">Send AJAX Request</button> -->
+
+  <div id="MyController" ng-controller="MyController">
+    <div ng-view> </div>
+  </div>
+
+</body>
+</div>
+<script type=text/ng-template id="ini.html">
+
+    <div class="dyn-data ng-enter col-xs-12 col-sm-12 col-lg-12" ng-repeat="row in fromServer" data-ng-bind-html="row.data"> {{row.data}}
+    </div>
+</script>
+
+<script type=text/ng-template id="details.html">
+    <div class="animate dyn-details-data ng-enter col-xs-12 col-sm-12 col-lg-12"  ng-repeat="row in fromDetails" data-ng-bind-html="row.data"> {{row.data}} </div>
+
+  </script>
+
+
+  <script>
+  
+var lat,long;
+var divClone;
+// localStorage.clear();
+
+// var localdata = [];
+// localdata.push(JSON.parse(localStorage.getItem('fblocaldata')));
+// localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+
+navigator.geolocation.getCurrentPosition(function (position) {
+    lat=position.coords.latitude;
+    long=position.coords.longitude;
+});
+
+
+$('#srch-term').on("keypress", function(e) {
+        if (e.keyCode == 13) {
+          angular.element($('#MyController')).scope().getUser();
+            return false;
+        }
+});
+
+$('.get').on('click',function()
+{
+    // $('.dyn-data').addClass("animate ng-enter");
+    $(this).closest('div').children('a').click();
+
+
+    angular.element($('#MyController')).scope().getUser();
+});
+
+$('#home a').on('click',function()
+{
+    angular.element($('#MyController')).scope().reset();
+    location.reload();
+
+});
+
+$(document).on('click','#fb_button',function()
+{
+
+id=$(this).attr("table");
+pic=$('#userimg').attr("value");
+name=$('#username').attr("value");
+
+               FB.ui(
+                 {
+                     method: 'feed',
+                     id: id,
+                     name: name,
+                     picture: pic,
+                     href: 'https://developers.facebook.com/docs/'
+                   },function(response){
+                   if(response && !response.error_message)
+                   {
+                       alert('successfully post');
+                   } else
+                   {
+                       alert('Something went error.');
+                   }
+                 });
+                 
+});
+
+
+$('.tab').on('click', function(){
+  $(".tab").removeClass("active");
+  $(this).addClass("active");
+
+
+    var type= $('.nav-pills  .active').attr("id");
+    if(type!=='fav')
+    {
+      angular.element($('#MyController')).scope().getUser();
+    }
+    if(type=='fav')
+    {
+      angular.element($('#MyController')).scope().get_fav();
+
+    }
+});
+
+$(document).on('click','.del-fav', function(){
+
+    localdata = {};
+    parent=$(this).closest('tr');
+    element_id=parent.attr('id');
+
+    saved_data=JSON.parse(localStorage.getItem('fblocaldata'));
+    for( i in saved_data)
+    {
+      if(element_id!==saved_data[i]['id'])
+      {
+        localdata[i]=saved_data[i];
+      }
+    }
+    localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+
+      angular.element($('#MyController')).scope().get_fav();
+
+});
+
+
+$(document).on("click",'.accord-panel', function(){
+
+var $sub_tab = $(this).find(".panel-collapse");
+
+if($sub_tab.attr("aria-expanded")=="true")
+{
+                $sub_tab.collapse('toggle');
+                // console.log("open");
+}
+else
+{
+                // console.log("closed");
+
+  $sub_tab = $(this).find(".panel-collapse");
+  $sub_tab.collapse('toggle');
+
+  $(this).siblings().each(function() {
+    var $sib_sub_tab = $(this).find(".panel-collapse");
+                $sib_sub_tab.collapse('hide');
+
+});
+}
+        });
+// $(document).on("click",'.panel', function(e){
+//               var $_target =  $(e.currentTarget);
+//               var $_panelBody = $_target.find(".panel-collapse");
+//               if($_panelBody){
+//                 $_panelBody.collapse('toggle')
+//               }
+//         });
+
+
+$(document).on('click','.details', function(){
+  // console.log("yay");
+    $(this).closest('td').children('a').click();
+    parent=$(this).closest('tr');
+    element_id=parent.attr('id');
+    angular.element($('#MyController')).scope().getDetails(element_id);
+});
+
+$(document).on('click','.back', function(){
+  // console.log("yay");
+     angular.element($('#MyController')).scope().refreshFavs();
+});
+
+$(document).on('click','#fb_butt', function(){
+  // console.log("yay");
+    // angular.element($('#MyController')).scope().refreshFavs();
+});
+
+
+$(document).on('click','.details-fav', function(){
+
+  if($(this).children("i").hasClass("glyphicon-star-empty"))
+  {
+    data={};
+
+    $(this).children("i").removeClass("glyphicon-star-empty");
+    $(this).children("i").addClass("glyphicon-star");
+    $(this).css("color","gold");
+    element_id=$(this).attr('id');
+
+
+    data['id']=element_id;
+    data['imgtag']='<img src="'+$('#userimg').attr("value")+'" class="img-circle" alt="Profile photo" width="60" height="60">';
+    data['uname']=$('#username').attr("value");
+    data['type']=$('.nav-pills  .active').text();
+    data['details']='<a href="#/details"></a><button  class="btn btn-default details"> <i class="glyphicon glyphicon-chevron-right"></i></button>';
+    // console.log(data);
+
+    localdata = {};
+    saved_data=JSON.parse(localStorage.getItem('fblocaldata'));
+    for( i in saved_data)
+    {
+      localdata[i]=saved_data[i];
+    }
+    localdata[element_id]=data;
+    localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+
+
+    // console.log(JSON.parse(localStorage.getItem('fblocaldata')));
+    // console.log(data);
+    // data[""];
+  }
+  else
+  {
+    $(this).children("i").removeClass("glyphicon-star");
+    $(this).children("i").addClass("glyphicon-star-empty");
+    $(this).css("color","");
+    element_id=$(this).attr('id');
+    localdata = {};
+    saved_data=JSON.parse(localStorage.getItem('fblocaldata'));
+    for( i in saved_data)
+    {
+      if(element_id!==saved_data[i]['id'])
+      {
+        localdata[i]=saved_data[i];
+      }
+    }
+    localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+    // console.log(JSON.parse(localStorage.getItem('fblocaldata')));
+  }
+});
+
+
+
+
+
+$(document).on('click','.fav', function(){
+
+// console.log($(this).children("i").hasClass("glyphicon-star-empty"));
+  if($(this).children("i").hasClass("glyphicon-star-empty"))
+  {
+    data={};
+
+    $(this).children("i").removeClass("glyphicon-star-empty");
+    $(this).children("i").addClass("glyphicon-star");
+    $(this).css("color","gold");
+    parent=$(this).closest('tr');
+    element_id=parent.attr('id');
+
+    data['id']=parent.attr('id');
+    data['imgtag']=$(':nth-child(2)',parent).html();
+    data['uname']=$(':nth-child(3)',parent).html();
+    data['type']=$('.nav-pills  .active').text();
+    data['details']=$(':nth-child(5)',parent).html();
+
+    localdata = {};
+    saved_data=JSON.parse(localStorage.getItem('fblocaldata'));
+    for( i in saved_data)
+    {
+      localdata[i]=saved_data[i];
+    }
+    localdata[element_id]=data;
+    localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+
+
+    // console.log(JSON.parse(localStorage.getItem('fblocaldata')));
+    // console.log(data);
+    // data[""];
+  }
+  else
+  {
+    $(this).children("i").removeClass("glyphicon-star");
+    $(this).children("i").addClass("glyphicon-star-empty");
+    $(this).css("color","");
+    parent=$(this).closest('tr');
+    element_id=parent.attr('id');
+    localdata = {};
+    saved_data=JSON.parse(localStorage.getItem('fblocaldata'));
+    for( i in saved_data)
+    {
+      if(element_id!==saved_data[i]['id'])
+      {
+        localdata[i]=saved_data[i];
+      }
+    }
+    localStorage.setItem('fblocaldata', JSON.stringify(localdata));
+    // console.log(JSON.parse(localStorage.getItem('fblocaldata')));
+  }
+});
+
+$(document).on('click','.nextlink',function(){
+  $(".pagelink").removeClass("active");
+  $(this).addClass("active");
+  nxt=$(this).attr('target');
+  // console.log($('.pagelink  .active').attr("target"));
+  var prev;
+angular.element($('#MyController')).scope().getUser(nxt,prev);
+});
+
+$(document).on('click','.prevlink',function(){
+  $(".pagelink").removeClass("active");
+  $(this).addClass("active");
+  prev=$(this).attr('target');
+  var nxt;
+angular.element($('#MyController')).scope().getUser(nxt,prev);
+});
+
+
+$('.clear').on('click', function(){
+    var type= $('.nav-pills  .active').attr("id");
+    if(type!=='fav')
+    {
+         $(".dyn-data").html('');
+    }
+    $(".search").val("");
+});
+
+  </script>
+
+
+</body>
+</html>
